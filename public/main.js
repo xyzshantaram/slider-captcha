@@ -71,7 +71,8 @@ globalThis.addEventListener("DOMContentLoaded", async () => {
                 y: piecePos.y
             })
         }).then(res => res.json()).catch(alert);
-        alert(result.success ? "Congrats!" : "Try again, loser.");
+        // alert(result.success ? "Congrats!" : "Try again, loser.");
+        console.log(result);
     }
 
     globalThis.requestAnimationFrame(draw);
