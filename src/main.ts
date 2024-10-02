@@ -137,7 +137,7 @@ app.get("/captcha", async () => {
   const captcha = generateCaptcha(
     svg.render().asPng(),
     // @ts-ignore how can a tuple stop being a tuple after calling map ;_;
-    color.map((n) => n - 30),
+    color.map((n) => n + 30),
     {
       cw: 300,
       ch: 300,
