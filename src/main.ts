@@ -1,18 +1,14 @@
 import nhttp from "@nhttp/nhttp";
 import serveStatic from "@nhttp/nhttp/serve-static";
 import { createCanvas, Image } from "@gfx/canvas";
-import { walk } from "@std/fs";
+import { generate } from '@prescott/geo-pattern';
+import { Resvg, ResvgRenderOptions } from '@resvg/resvg-js';
 
 interface Rectangle {
     x: number;
     y: number;
     w: number;
     h: number;
-}
-
-const paths: string[] = [];
-for await (const image of walk('./images')) {
-    if (image.isFile) paths.push(image.path);
 }
 
 function areIntersecting(rect1: Rectangle, rect2: Rectangle, threshold = 0.5) {
@@ -36,7 +32,9 @@ const getPieceCoords = (cw: number, ch: number, pw: number, ph: number) => {
     return { x, y };
 };
 
-async function generateCaptcha(from: string, opts: {
+const alpha = 0.8;
+
+function generateCaptcha(from: Uint8Array, color: [number, number, number], opts: {
     pw: number;
     ph: number;
     cw: number;
@@ -45,7 +43,7 @@ async function generateCaptcha(from: string, opts: {
     const { pw, ph, cw, ch } = opts;
     const canvas = createCanvas(cw, ch);
     const ctx = canvas.getContext("2d");
-    const image = await Image.load(from);
+    const image = new Image(from);
     if (image.width !== image.height) {
         throw new Error("A square image is required for the captcha.");
     }
@@ -54,7 +52,8 @@ async function generateCaptcha(from: string, opts: {
     const pctx = piece.getContext("2d");
     const coords = getPieceCoords(canvas.width, canvas.height, pw, ph);
     pctx.drawImage(canvas, coords.x, coords.y, pw, ph, 0, 0, pw, ph);
-    ctx.fillStyle = 'rgba(60, 60, 255, 0.3)';
+    ctx.fillStyle = `rgba(${color.join(', ')}, ${alpha})`;
+    console.log(ctx.fillStyle);
     ctx.fillRect(coords.x, coords.y, pw, ph);
 
     return {
@@ -88,27 +87,48 @@ app.post("/captcha/:uuid/check", ({ params, response, body }) => {
 
     const { x, y, w, h } = captchas.get(params.uuid)!.solution;
 
-    console.log({ rx, ry, x, y, w, h })
-
-    return {
-        success: areIntersecting({
-            x, y, w, h
-        }, {
-            x: rx, y: ry, w, h
-        }),
-    };
+    const success = areIntersecting({ x, y, w, h }, { x: rx, y: ry, w, h });
+    console.log(success);
+    return { success };
 });
-
-const captchas = new Map<string, Awaited<ReturnType<typeof generateCaptcha>>>();
 
 function randIntInRange(min: number, max: number) {
     return Math.floor(Math.random() * (max - min)) + min;
 }
 
+const captchas = new Map<string, Awaited<ReturnType<typeof generateCaptcha>>>();
+
+const randomColor = () => Array(3).fill(0).map(_ => randIntInRange(0, 255)) as [number, number, number];
+
+const pattern = async (input: string, color: [number, number, number]) => {
+    return await generate({
+        input,
+        color: '#' + color.map(i => i.toString(16).padStart(2, '0')).join('')
+    });
+}
+
+const toResvg = (p: Awaited<ReturnType<typeof pattern>>) => {
+    const size = Math.round(Math.min(p.width, p.height));
+    const opts: ResvgRenderOptions = {
+        crop: {
+            left: 0,
+            top: 0,
+            bottom: size,
+            right: size
+        }
+    };
+
+    console.log(opts);
+
+    return new Resvg(p.toSVG(), opts);
+}
+
 app.get("/captcha", async () => {
     const uuid = crypto.randomUUID();
-    const img = paths[randIntInRange(0, paths.length)];
-    const captcha = await generateCaptcha(img, {
+    const color = randomColor();
+    const svg = toResvg(await pattern(uuid, color));
+    console.log(svg.width, svg.height);
+    const captcha = generateCaptcha(svg.render().asPng(), color, {
         cw: 300,
         ch: 300,
         pw: 50,
