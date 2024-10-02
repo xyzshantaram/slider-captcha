@@ -54,7 +54,7 @@ globalThis.addEventListener("DOMContentLoaded", async () => {
             piecePos.y = mouse.pos.y - pieceImg.height / 2;
         }
 
-        ctx.strokeStyle = 'rgba(255, 255, 255, 1)';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
         ctx.lineWidth = 10;
         ctx.strokeRect(piecePos.x, piecePos.y, pieceImg.width, pieceImg.height);
         ctx.drawImage(pieceImg, piecePos.x, piecePos.y);

@@ -12,7 +12,7 @@ interface Rectangle {
 
 const paths: string[] = [];
 for await (const image of walk('./images')) {
-    paths.push(image.path);
+    if (image.isFile) paths.push(image.path);
 }
 
 function areIntersecting(rect1: Rectangle, rect2: Rectangle, threshold = 0.5) {
@@ -54,7 +54,7 @@ async function generateCaptcha(from: string, opts: {
     const pctx = piece.getContext("2d");
     const coords = getPieceCoords(canvas.width, canvas.height, pw, ph);
     pctx.drawImage(canvas, coords.x, coords.y, pw, ph, 0, 0, pw, ph);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+    ctx.fillStyle = 'rgba(60, 60, 255, 0.3)';
     ctx.fillRect(coords.x, coords.y, pw, ph);
 
     return {
@@ -102,7 +102,7 @@ app.post("/captcha/:uuid/check", ({ params, response, body }) => {
 const captchas = new Map<string, Awaited<ReturnType<typeof generateCaptcha>>>();
 
 function randIntInRange(min: number, max: number) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+    return Math.floor(Math.random() * (max - min)) + min;
 }
 
 app.get("/captcha", async () => {
