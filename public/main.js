@@ -23,8 +23,8 @@ globalThis.addEventListener("DOMContentLoaded", async () => {
     const mouse = {
         down: false,
         pos: {
-            x: 25,
-            y: 125
+            x: canvas.width / 2,
+            y: canvas.height / 2
         }
     }
 
@@ -41,21 +41,24 @@ globalThis.addEventListener("DOMContentLoaded", async () => {
     const pieceImg = await loadImage(captcha.piece);
 
     const piecePos = {
-        x: mouse.pos.x,
-        y: mouse.pos.y
+        x: canvas.width / 2 - pieceImg.width / 2,
+        y: canvas.height / 2 - pieceImg.width / 2
     };
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(puzzleImg, 100, 0);
+        ctx.drawImage(puzzleImg, 0, 0);
 
         if (mouse.down) {
             piecePos.x = mouse.pos.x - pieceImg.width / 2;
             piecePos.y = mouse.pos.y - pieceImg.height / 2;
         }
 
-        ctx.strokeStyle = 'rgba(0,0,0,1)';
+        ctx.strokeStyle = 'black';
         ctx.lineWidth = 10;
+        ctx.strokeRect(piecePos.x, piecePos.y, pieceImg.width, pieceImg.height);
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 5;
         ctx.strokeRect(piecePos.x, piecePos.y, pieceImg.width, pieceImg.height);
         ctx.drawImage(pieceImg, piecePos.x, piecePos.y);
         globalThis.requestAnimationFrame(draw);
@@ -67,7 +70,7 @@ globalThis.addEventListener("DOMContentLoaded", async () => {
         const result = await fetch(`/captcha/${captcha.uuid}/check`, {
             method: "POST",
             body: JSON.stringify({
-                x: piecePos.x - 100,
+                x: piecePos.x,
                 y: piecePos.y
             })
         }).then(res => res.json()).catch(alert);
