@@ -13,10 +13,12 @@
       "jsr:@std/fmt@0.214": "jsr:@std/fmt@0.214.0",
       "jsr:@std/fs@0.214": "jsr:@std/fs@0.214.0",
       "jsr:@std/fs@0.217.0": "jsr:@std/fs@0.217.0",
+      "jsr:@std/fs@^1.0.4": "jsr:@std/fs@1.0.4",
       "jsr:@std/path@0.214": "jsr:@std/path@0.214.0",
       "jsr:@std/path@0.217.0": "jsr:@std/path@0.217.0",
       "jsr:@std/path@^0.214.0": "jsr:@std/path@0.214.0",
       "jsr:@std/path@^0.217.0": "jsr:@std/path@0.217.0",
+      "jsr:@std/path@^1.0.6": "jsr:@std/path@1.0.6",
       "npm:@types/node": "npm:@types/node@18.16.19"
     },
     "jsr": {
@@ -71,6 +73,12 @@
           "jsr:@std/path@^0.217.0"
         ]
       },
+      "@std/fs@1.0.4": {
+        "integrity": "2907d32d8d1d9e540588fd5fe0ec21ee638134bd51df327ad4e443aaef07123c",
+        "dependencies": [
+          "jsr:@std/path@^1.0.6"
+        ]
+      },
       "@std/path@0.214.0": {
         "integrity": "d5577c0b8d66f7e8e3586d864ebdf178bb326145a3611da5a51c961740300285",
         "dependencies": [
@@ -82,6 +90,9 @@
         "dependencies": [
           "jsr:@std/assert@^0.217.0"
         ]
+      },
+      "@std/path@1.0.6": {
+        "integrity": "ab2c55f902b380cf28e0eec501b4906e4c1960d13f00e11cfbcd21de15f18fed"
       }
     },
     "npm": {
@@ -95,7 +106,8 @@
   "workspace": {
     "dependencies": [
       "jsr:@gfx/canvas@^0.5.6",
-      "jsr:@nhttp/nhttp@^2.0.2"
+      "jsr:@nhttp/nhttp@^2.0.2",
+      "jsr:@std/fs@^1.0.4"
     ]
   }
 }

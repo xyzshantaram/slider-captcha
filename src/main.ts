@@ -1,12 +1,18 @@
 import nhttp from "@nhttp/nhttp";
 import serveStatic from "@nhttp/nhttp/serve-static";
 import { createCanvas, Image } from "@gfx/canvas";
+import { walk } from "@std/fs";
 
 interface Rectangle {
     x: number;
     y: number;
     w: number;
     h: number;
+}
+
+const paths: string[] = [];
+for await (const image of walk('./images')) {
+    paths.push(image.path);
 }
 
 function areIntersecting(rect1: Rectangle, rect2: Rectangle, threshold = 0.5) {
@@ -48,7 +54,7 @@ async function generateCaptcha(from: string, opts: {
     const pctx = piece.getContext("2d");
     const coords = getPieceCoords(canvas.width, canvas.height, pw, ph);
     pctx.drawImage(canvas, coords.x, coords.y, pw, ph, 0, 0, pw, ph);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
     ctx.fillRect(coords.x, coords.y, pw, ph);
 
     return {
@@ -95,9 +101,14 @@ app.post("/captcha/:uuid/check", ({ params, response, body }) => {
 
 const captchas = new Map<string, Awaited<ReturnType<typeof generateCaptcha>>>();
 
+function randIntInRange(min: number, max: number) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 app.get("/captcha", async () => {
     const uuid = crypto.randomUUID();
-    const captcha = await generateCaptcha("./public/house.png", {
+    const img = paths[randIntInRange(0, paths.length)];
+    const captcha = await generateCaptcha(img, {
         cw: 300,
         ch: 300,
         pw: 50,
