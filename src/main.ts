@@ -1,7 +1,8 @@
 import nhttp from "@nhttp/nhttp";
 import serveStatic from "@nhttp/nhttp/serve-static";
-import { createCanvas, Image } from "@gfx/canvas";
-import { generate } from "@prescott/geo-pattern";
+import { createCanvas, loadImage } from "canvas";
+
+import { generate, Pattern } from "@prescott/geo-pattern";
 import { Resvg, ResvgRenderOptions } from "@resvg/resvg-js";
 
 interface Rectangle {
@@ -32,9 +33,9 @@ const getPieceCoords = (cw: number, ch: number, pw: number, ph: number) => {
   return { x, y };
 };
 
-const alpha = 0.35;
+const alpha = 0.2;
 
-function generateCaptcha(
+async function generateCaptcha(
   from: Uint8Array,
   color: [number, number, number],
   opts: {
@@ -43,22 +44,24 @@ function generateCaptcha(
     cw: number;
     ch: number;
   },
+  colorBehaviour: 'average' | 'darken' = 'darken'
 ) {
   const { pw, ph, cw, ch } = opts;
   const canvas = createCanvas(cw, ch);
   const ctx = canvas.getContext("2d");
-  const image = new Image(from);
-  ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, cw, ch);
+  const image = await loadImage(from);
+  ctx.drawImage(image, 0, 0, image.width(), image.height(), 0, 0, cw, ch);
   const piece = createCanvas(pw, ph);
   const pctx = piece.getContext("2d");
   const coords = getPieceCoords(canvas.width, canvas.height, pw, ph);
   pctx.drawImage(canvas, coords.x, coords.y, pw, ph, 0, 0, pw, ph);
-  ctx.fillStyle = `rgba(${color.join(", ")}, ${alpha})`;
+  const rc = colorBehaviour === 'average' ? color.join(',') : '0, 0, 0';
+  ctx.fillStyle = `rgba(${rc}, ${alpha})`;
   ctx.fillRect(coords.x, coords.y, pw, ph);
 
   return {
-    puzzle: canvas.encode(),
-    piece: piece.encode(),
+    puzzle: canvas.toBuffer(),
+    piece: piece.toBuffer(),
     solution: {
       ...coords,
       w: pw,
@@ -99,20 +102,23 @@ function randIntInRange(min: number, max: number) {
 const captchas = new Map<string, Awaited<ReturnType<typeof generateCaptcha>>>();
 
 const randomColor = () =>
-  Array(3).fill(0).map((_) => randIntInRange(0, 255)) as [
+  Array(3).fill(0).map((_) => randIntInRange(75, 255)) as [
     number,
     number,
     number,
   ];
 
+const minPatternSize = 70;
 const pattern = async (input: string, color: [number, number, number]) => {
-  return await generate({
+  const r = await generate({
     input,
     color: "#" + color.map((i) => i.toString(16).padStart(2, "0")).join(""),
   });
+  if (r.width < minPatternSize || r.height < minPatternSize) return pattern(crypto.randomUUID(), color);
+  return r;
 };
 
-const toResvg = (p: Awaited<ReturnType<typeof pattern>>) => {
+const toResvg = (p: Pattern) => {
   const size = Math.round(Math.min(p.width, p.height));
   const opts: ResvgRenderOptions = {
     crop: {
@@ -134,7 +140,7 @@ app.get("/captcha", async () => {
   const uuid = crypto.randomUUID();
   const color = randomColor();
   const svg = toResvg(await pattern(uuid, color));
-  const captcha = generateCaptcha(
+  const captcha = await generateCaptcha(
     svg.render().asPng(),
     // @ts-ignore how can a tuple stop being a tuple after calling map ;_;
     color.map((n) => n + 30),
